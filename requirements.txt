@@ -1,0 +1,15 @@
+xgboost
+scikit-learn
+shap
+langgraph
+fastapi
+uvicorn
+streamlit
+groq
+joblib
+pandas
+numpy
+faker
+python-dotenv
+matplotlib
+requests
