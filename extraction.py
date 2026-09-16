@@ -47,7 +47,7 @@ def _extract_via_api(raw_text: str,api_key: str) -> ExtractedFacts:
         temperature=0,
     )
 
-    data = json.laod(completion.choices[0].message.content)
+    data = json.loads(completion.choices[0].message.content)
     return ExtractedFacts.model_validate(data)
 
 def _mock_extract(raw_text: str) -> ExtractedFacts:

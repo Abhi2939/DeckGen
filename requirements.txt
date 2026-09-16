@@ -13,3 +13,4 @@ faker
 python-dotenv
 matplotlib
 requests
+python-pptx

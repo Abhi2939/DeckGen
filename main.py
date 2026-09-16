@@ -7,8 +7,8 @@ from planner import plan_deck
 from renderers import fund_allocation,how_it_works
 
 RENDERERS = {
-    "fund_allocation": fund_allocation,
-    "how_it_works": how_it_works
+    "fund_allocation": fund_allocation.render,
+    "how_it_works": how_it_works.render,
 }
 
 def generate_deck(raw_text: str, output_path: str) -> None:
@@ -25,12 +25,12 @@ def generate_deck(raw_text: str, output_path: str) -> None:
 
     for slide_type in plan.slide_types:
 
-        renderers = RENDERERS.get(slide_type)
-        if renderers is None:
+        renderer = RENDERERS.get(slide_type)
+        if renderer is None:
             print(f"[warn] no renderer registered for '{slide_type}', skipping")
             continue
 
-        renderers(prs,facts)
+        renderer(prs,facts)
 
         print(f"[render] built '{slide_type}' slide")
 
