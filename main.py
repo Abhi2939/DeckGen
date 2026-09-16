@@ -37,3 +37,19 @@ def generate_deck(raw_text: str, output_path: str) -> None:
     prs.save(output_path)
     print(f"\nSaved: {output_path}")
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--description", type=str, default=None)
+    parser.add_argument("--file", type=str, default=None)
+    parser.add_argument("--output", type=str, default="output.pptx")
+    args = parser.parse_args()
+
+    if args.file:
+        with open(args.file) as f:
+            text = f.read()
+    elif args.description:
+        text = args.description
+    else:
+        text = ""
+
+    generate_deck(text, args.output)
