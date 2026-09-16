@@ -41,7 +41,7 @@ def _extract_via_api(raw_text: str,api_key: str) -> ExtractedFacts:
     client = Groq(api_key=api_key)
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-20b",
         messages=[{"role": "user", "content": EXTRACTION_PROMPT.format(text=raw_text)}],
         response_format={"type": "json_object"},
         temperature=0,
