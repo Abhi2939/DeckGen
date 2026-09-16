@@ -27,7 +27,7 @@ TEXT:
 Return only the JSON object, no other text.
 """
 
-def extract_text(raw_text: str) -> ExtractedFacts:
+def extract_facts(raw_text: str) -> ExtractedFacts:
 
     api_key = os.environ.get("GROQ_API_KEY")
 
