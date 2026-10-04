@@ -46,7 +46,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.file:
-        with open(args.file, encoding="utf-8") as f:   # utf-8 so Rs/₹ survive on Windows
+        with open(args.file, encoding="utf-8") as f:  
             text = f.read()
     elif args.description:
         text = args.description
