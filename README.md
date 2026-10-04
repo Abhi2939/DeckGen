@@ -1,6 +1,10 @@
 # DeckGen
 
-DeckGen is a Python-based pitch-deck generator. It turns a plain-language company description into a PowerPoint presentation by extracting structured facts, selecting the relevant slide types, and rendering each slide with `python-pptx`. It can be run from the command line or through a Streamlit web app.
+DeckGen is a Python-based pitch-deck generator. It turns a plain-language company description into a PowerPoint presentation by extracting structured facts, selecting the relevant slide types, and rendering each slide with `python-pptx`.
+
+**Live demo:** https://deckgen-opufnij5ym2zokt2akso8j.streamlit.app/
+
+It ships with two interfaces: a **Streamlit web frontend** for non-technical users and a **command-line interface** for scripting and testing.
 
 ## Current capabilities
 
@@ -14,30 +18,36 @@ DeckGen is a Python-based pitch-deck generator. It turns a plain-language compan
   - **How it works**: up to 8 numbered steps on an arc, with alternating description cards.
   - **Competitive landscape**: 2x2 grid of competitor categories with names (or logos, if provided).
 - Skip any slide that has no usable data in the description.
-- Run as a Streamlit app: paste a description, generate the deck, and download the `.pptx`.
+- **Streamlit frontend**: paste a description in the browser, generate the deck, and download the `.pptx` with no terminal needed.
+- Deployed as a public link on Streamlit Community Cloud.
 
 ## Architecture
 
 ```text
-Company description
-        |
-        v
-extraction.py  ->  ExtractedFacts
-        |
-        v
-planner.py     ->  DeckPlan
-        |
-        v
-renderers/     ->  PowerPoint slides
-        |
-        v
-output.pptx
+   Streamlit frontend (app.py)          CLI (main.py)
+   text area + Generate deck            --description / --file
+              \                          /
+               v                        v
+              generate_deck(text, output_path)
+                          |
+                          v
+        extraction.py  ->  ExtractedFacts
+                          |
+                          v
+        planner.py     ->  DeckPlan
+                          |
+                          v
+        renderers/     ->  PowerPoint slides
+                          |
+                          v
+                     .pptx file
+        (download button in the app / saved to disk in the CLI)
 ```
 
 | File | Purpose |
 | --- | --- |
+| `app.py` | Streamlit frontend wrapping `generate_deck`. |
 | `main.py` | Command-line entry point and deck-generation orchestration. |
-| `app.py` | Streamlit web app wrapping `generate_deck`. |
 | `extraction.py` | Groq-based fact extraction and mock fallback data. |
 | `schemas.py` | Pydantic models shared by each pipeline stage. |
 | `planner.py` | Selects slides based on the facts that are available. |
@@ -48,6 +58,7 @@ output.pptx
 | `renderers/how_it_works.py` | Renders the numbered process flow. |
 | `renderers/competitive_landscape.py` | Renders the 2x2 competitor grid. |
 | `assets/logos/` | Optional competitor logos (see below). |
+| `requirements.txt` | Python dependencies, also used by Streamlit Cloud. |
 
 ## Requirements
 
@@ -86,6 +97,26 @@ If `GROQ_API_KEY` is missing, DeckGen uses built-in mock data instead of making 
 
 ## Usage
 
+### Streamlit frontend
+
+Use the live demo above, or run it locally:
+
+```powershell
+streamlit run app.py
+```
+
+Then in the browser:
+
+1. Paste the company description into the text area.
+2. Click **Generate deck**.
+3. Click the download button to save the `.pptx`.
+
+How the app works:
+
+- The deck is built by calling `generate_deck(text, output_path)` and written to a temporary file.
+- The file's bytes are read back and kept in `st.session_state`, so the download button keeps working after Streamlit reruns the page.
+- Any error during extraction or rendering is caught and shown in the page with `st.error` instead of crashing the app.
+
 ### Command line
 
 Generate a deck from a description:
@@ -112,14 +143,6 @@ python main.py --mock --output preview.pptx
 | `--file` | Path to a text file containing the description. |
 | `--output` | Output filename (default `output.pptx`). |
 | `--mock` | Skip Groq and use the built-in mock data. |
-
-### Streamlit app
-
-```powershell
-streamlit run app.py
-```
-
-Paste a company description, click **Generate deck**, then download the `.pptx`.
 
 ## What the description needs to contain
 
@@ -184,7 +207,11 @@ To add a slide type:
 4. Create a renderer in `renderers/` (reuse the helpers in `renderers/common.py`).
 5. Register the renderer in `RENDERERS` in `main.py`.
 
+The Streamlit frontend needs no changes, because it calls the same `generate_deck` function.
+
 ## Deployment (Streamlit Community Cloud)
+
+The app is deployed at https://deckgen-opufnij5ym2zokt2akso8j.streamlit.app/. To deploy your own copy:
 
 1. Push the repo to GitHub. `.gitignore` should contain:
 
@@ -205,7 +232,11 @@ To add a slide type:
    GROQ_API_KEY = "your_groq_api_key"
 ```
 
+4. Open the live link and test it with a full description. If the deck shows "Example Co", the secret is missing or misspelled and the app has fallen back to mock data.
+
 Top-level secrets are exposed as environment variables, so `extraction.py` reads the key without code changes. Use relative paths only, since the app runs on Linux servers.
+
+Free Streamlit apps go to sleep after a few days without traffic. The first visit afterwards shows a "wake this app up" button and a short wait.
 
 ## Notes
 
