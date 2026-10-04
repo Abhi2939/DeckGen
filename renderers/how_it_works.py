@@ -1,79 +1,51 @@
-from pptx.util import Inches, Pt, Emu
-from pptx.enum.shapes import MSO_SHAPE, MSO_CONNECTOR
-from pptx.enum.text import PP_ALIGN
-from pptx.dml.color import RGBColor
+import math
+from pptx.util import Inches, Pt
+from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
-from style import PALETTE, FONT_NAME, TITLE_SIZE, BODY_SIZE, LABEL_SIZE
+from style import PALETTE, FONT_NAME
+from renderers.common import (new_slide, add_text, add_runs, add_box, add_line,
+                              add_title, add_brand_ring)
+
+CIRCLE_D = 0.72
 
 
 def render(prs, facts):
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-
-    title_box = slide.shapes.add_textbox(Inches(0.6), Inches(0.5), Inches(8.8), Inches(0.8))
-    tf = title_box.text_frame
-    tf.text = "How it works"
-    tf.paragraphs[0].runs[0].font.size = TITLE_SIZE
-    tf.paragraphs[0].runs[0].font.name = FONT_NAME
-    tf.paragraphs[0].runs[0].font.color.rgb = PALETTE["neutral_dark"]
-    tf.paragraphs[0].runs[0].font.bold = True
-
-    steps = facts.process_steps
+    steps = facts.process_steps[:8]
     n = len(steps)
+    slide = new_slide(prs, "bg_light")
 
-    slide_width = Inches(10)
-    margin = Inches(0.6)
-    usable_width = slide_width - 2 * margin
-    circle_d = Inches(0.55)
-    circle_y = Inches(2.0)
-    spacing = usable_width // n if n else usable_width
+    add_title(slide, "How it works?", size=26)
+    add_brand_ring(slide)
+    sub = facts.tagline or facts.one_liner
+    if sub:
+        add_text(slide, 0.45, 0.85, 8.4, 0.4, sub, 17, True, "blue_royal")
 
-    centers = [margin + spacing * i + spacing // 2 for i in range(n)]
+    left, usable = 0.45, 9.1
+    spacing = usable / n
+    centers = []
+    for i in range(n):
+        cx = left + spacing * (i + 0.5)
+        arc = math.sin(math.pi * i / (n - 1)) if n > 1 else 0
+        centers.append((cx, 2.45 - 0.4 * arc))      
 
-    if n > 1:
-        line = slide.shapes.add_connector(
-            MSO_CONNECTOR.STRAIGHT,
-            centers[0], circle_y + circle_d // 2,
-            centers[-1], circle_y + circle_d // 2,
-        )
-        line.line.color.rgb = PALETTE["accent_light"]
-        line.line.width = Pt(2)
+    
+    for (x1, y1), (x2, y2) in zip(centers, centers[1:]):
+        add_line(slide, x1, y1, x2, y2, "green", 2.25)
 
-    for i, (step, cx) in enumerate(zip(steps, centers)):
-        circle = slide.shapes.add_shape(
-            MSO_SHAPE.OVAL, cx - circle_d // 2, circle_y, circle_d, circle_d
-        )
-        circle.fill.solid()
-        circle.fill.fore_color.rgb = PALETTE["accent"]
-        circle.line.fill.background()
-        tf = circle.text_frame
-        tf.text = str(i + 1)
-        p = tf.paragraphs[0]
-        p.alignment = PP_ALIGN.CENTER
-        p.runs[0].font.size = Pt(16)
-        p.runs[0].font.bold = True
-        p.runs[0].font.name = FONT_NAME
-        p.runs[0].font.color.rgb = PALETTE["white"]
+    card_w = min(2.2, spacing * 1.8)
+    for i, (step, (cx, cy)) in enumerate(zip(steps, centers)):
+        low = i % 2 == 1                               
+        card_top = 4.0 if low else 3.05
+        card_h = 1.2 if low else 0.85
+        card_x = min(max(cx - card_w / 2, 0.25), 9.75 - card_w)
 
-        text_box = slide.shapes.add_textbox(
-            cx - Inches(1.0), circle_y + circle_d + Inches(0.15), Inches(2.0), Inches(1.6)
-        )
-        tf = text_box.text_frame
-        tf.word_wrap = True
-        p = tf.paragraphs[0]
-        p.alignment = PP_ALIGN.CENTER
-        run = p.add_run()
-        run.text = step.title
-        run.font.size = Pt(13)
-        run.font.bold = True
-        run.font.name = FONT_NAME
-        run.font.color.rgb = PALETTE["neutral_dark"]
+        add_line(slide, cx, cy + CIRCLE_D / 2, cx, card_top, "gray_text", 0.75, dashed=True)
+        add_box(slide, card_x, card_top, card_w, card_h, "white", MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.1)
+        add_text(slide, card_x + 0.1, card_top + 0.1, card_w - 0.2, 0.3, step.title, 10.5, True, "neutral_dark")
+        add_text(slide, card_x + 0.1, card_top + 0.4, card_w - 0.2, card_h - 0.45, step.description, 9, False, "gray_text")
 
-        p2 = tf.add_paragraph()
-        p2.alignment = PP_ALIGN.CENTER
-        run2 = p2.add_run()
-        run2.text = step.description
-        run2.font.size = LABEL_SIZE
-        run2.font.name = FONT_NAME
-        run2.font.color.rgb = PALETTE["neutral_dark"]
-
+        circ = add_box(slide, cx - CIRCLE_D / 2, cy - CIRCLE_D / 2, CIRCLE_D, CIRCLE_D, "green", MSO_SHAPE.OVAL)
+        add_text(slide, cx - CIRCLE_D / 2, cy - CIRCLE_D / 2, CIRCLE_D, CIRCLE_D, str(i + 1), 20, True, "white",
+                 PP_ALIGN.CENTER, MSO_ANCHOR.MIDDLE)
     return slide
